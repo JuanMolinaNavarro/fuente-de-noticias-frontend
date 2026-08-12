@@ -1,26 +1,25 @@
 import Link from "next/link";
 
-/* Isotipo: pluma en placa azul (avatar de marca según el manual) */
+/* Isotipo de marca: logo oficial (plumín con "f" sobre placa azul) */
 export function Isotipo({ size = 44 }: { size?: number }) {
   return (
-    <span
-      className="inline-flex items-center justify-center rounded-md bg-azul"
-      style={{ width: size, height: size }}
-    >
-      <svg
-        viewBox="0 0 24 24"
-        width={size * 0.58}
-        height={size * 0.58}
-        fill="none"
-        stroke="#fff"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-      >
-        <path d="M20.2 3.8c-3.4-.6-7.9.6-10.9 3.6-2.4 2.4-3.6 5.5-3.8 8.6l-1.7 4.2 4.2-1.7c3.1-.2 6.2-1.4 8.6-3.8 3-3 4.2-7.5 3.6-10.9z" />
-        <path d="M5.5 18.5 15 9" />
-      </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logo.png"
+      alt="Fuente de Noticias"
+      width={size}
+      height={size}
+      className="inline-block shrink-0 select-none"
+    />
+  );
+}
+
+/* Wordmark bitonal del manual: "Fuente" + "de Noticias" en azul claro */
+export function Wordmark({ className = "" }: { className?: string }) {
+  return (
+    <span className={`font-display font-black tracking-tight ${className}`}>
+      <span className="text-azul">Fuente </span>
+      <span className="text-azul-claro">de Noticias</span>
     </span>
   );
 }
@@ -43,39 +42,39 @@ export function Masthead() {
       <div className="flex flex-col items-center gap-3 py-7">
         <Link href="/" className="flex items-center gap-4">
           <Isotipo />
-          <h1 className="font-display text-4xl font-black tracking-tight text-azul sm:text-6xl">
-            Fuente de Noticias
+          <h1 className="text-4xl sm:text-6xl">
+            <Wordmark />
           </h1>
         </Link>
         <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-gris">
           Tu fuente. Tu Tucumán.
         </p>
       </div>
-      <div className="regla-doble" />
+      <div className="regla-marca" />
     </header>
   );
 }
 
 export function PiePagina() {
   return (
-    <footer className="mt-16 bg-carbon">
-      <div className="mx-auto max-w-6xl px-5 py-10">
-        <div className="flex items-center gap-3">
-          <Isotipo size={34} />
-          <p className="font-display text-xl font-bold text-white">
-            Fuente de Noticias
-          </p>
+    <footer className="mt-16 bg-pie">
+      <div className="mx-auto max-w-6xl px-5 py-14 text-center">
+        <div className="mb-4 flex justify-center">
+          <Isotipo size={40} />
         </div>
-        <div className="mt-5 flex flex-col gap-2 text-[11px] uppercase tracking-[0.16em] text-white/50 sm:flex-row sm:justify-between">
-          <span>
-            © {new Date().getFullYear()} Fuente de Noticias — Tu fuente. Tu
-            Tucumán.
-          </span>
-          <span>
-            Notas elaboradas a partir de información publicada por los medios
-            citados en cada artículo.
-          </span>
-        </div>
+        <p className="font-display text-3xl font-black tracking-tight text-white">
+          FUENTE <span className="text-azul-claro">DE NOTICIAS</span>
+        </p>
+        <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-white/40">
+          Tu fuente. Tu Tucumán.
+        </p>
+        <div className="mx-auto mt-8 h-px w-16 bg-azul-medio/40" />
+        <p className="mt-6 text-xs leading-relaxed text-white/30">
+          © {new Date().getFullYear()} Fuente de Noticias · Tucumán · Argentina
+          <br />
+          Notas elaboradas a partir de información publicada por los medios
+          citados en cada artículo.
+        </p>
       </div>
     </footer>
   );

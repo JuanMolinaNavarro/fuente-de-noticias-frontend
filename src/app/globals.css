@@ -13,14 +13,16 @@
   --color-azul-medio: #2e5da6; /* Botones, links, interactivos */
   --color-azul-claro: #4a80d4; /* Acentos, íconos, etiquetas */
   --color-hielo: #e8eef8; /* Fondos de sección en web */
-  --color-carbon: #1a1a2e; /* Fondo oscuro (panel) y texto principal */
+  --color-gris-claro: #f0f2f7; /* Tarjetas y fondos suaves */
+  --color-carbon: #1a1a2e; /* Fondo oscuro de marca / texto principal */
   --color-gris-oscuro: #3a3a4a; /* Textos secundarios */
   --color-gris: #6b7280; /* Captions y metadata */
   --color-urgente: #e53e3e; /* Última hora — alto impacto */
 
-  /* Derivados para el panel oscuro */
-  --color-panel: #232338;
-  --color-borde: #3a3a4a;
+  /* Sistema digital oscuro (panel de administración) */
+  --color-noche: #0a0f1e;
+  --color-noche-2: #0d1628;
+  --color-pie: #050810;
   --color-tiza: #ededf2;
 }
 
@@ -31,10 +33,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Filete institucional bajo el masthead */
-.regla-doble {
-  border-top: 3px solid var(--color-azul);
-  box-shadow: 0 5px 0 -4px var(--color-azul);
+/* Divisor de marca: degradado Azul Medio → Azul Claro */
+.regla-marca {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--color-azul) 0%,
+    var(--color-azul-medio) 55%,
+    var(--color-azul-claro) 100%
+  );
 }
 
 /* Capitular para el cuerpo de las notas */
@@ -52,14 +59,41 @@ body {
 /* Placa tipográfica cuando la nota no tiene imagen propia */
 .placa {
   background:
-    repeating-linear-gradient(
-      -45deg,
-      rgba(74, 128, 212, 0.14),
-      rgba(74, 128, 212, 0.14) 1px,
-      transparent 1px,
-      transparent 8px
+    radial-gradient(
+      ellipse 80% 70% at 50% 30%,
+      rgba(74, 128, 212, 0.16) 0%,
+      transparent 70%
     ),
-    var(--color-hielo);
+    linear-gradient(135deg, var(--color-hielo) 0%, #dde6f5 100%);
+}
+
+/* Punto parpadeante para URGENTE (breaking bar del manual) */
+.punto-urgente {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #fff;
+  animation: blink 1s infinite;
+}
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Tarjeta con elevación al pasar el mouse (lenguaje del sistema digital) */
+.tarjeta-hover {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.tarjeta-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(28, 58, 107, 0.12);
 }
 
 ::selection {

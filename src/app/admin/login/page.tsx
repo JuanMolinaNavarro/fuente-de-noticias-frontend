@@ -10,16 +10,16 @@ export default async function Login({
 }) {
   const { error } = await searchParams;
   return (
-    <div className="flex min-h-screen items-center justify-center bg-carbon text-tiza">
-      <div className="w-full max-w-sm border border-borde bg-panel p-8">
+    <div className="flex min-h-screen items-center justify-center bg-noche text-tiza">
+      <div className="w-full max-w-sm rounded-2xl border border-azul-medio/25 bg-white/[0.02] p-8">
         <div className="flex items-center gap-3">
-          <Isotipo size={38} />
+          <Isotipo size={40} />
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-azul-claro">
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-azul-claro">
               Sala de redacción
             </p>
-            <h1 className="font-display text-2xl font-bold">
-              Fuente de Noticias
+            <h1 className="font-display text-2xl font-black">
+              Fuente <span className="text-azul-claro">de Noticias</span>
             </h1>
           </div>
         </div>
@@ -30,7 +30,7 @@ export default async function Login({
               type="password"
               name="password"
               autoFocus
-              className="mt-2 w-full border border-borde bg-carbon px-3 py-2.5 text-sm text-tiza outline-none focus:border-azul-claro"
+              className="mt-2 w-full rounded-lg border border-azul-medio/30 bg-noche-2 px-3 py-2.5 text-sm text-tiza outline-none focus:border-azul-claro"
             />
           </label>
           {error && (
@@ -40,7 +40,7 @@ export default async function Login({
           )}
           <button
             type="submit"
-            className="w-full bg-azul-medio px-4 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-white hover:bg-azul-claro"
+            className="w-full rounded-lg bg-azul-medio px-4 py-2.5 text-xs font-bold uppercase tracking-[0.2em] text-white transition-colors hover:bg-azul-claro"
           >
             Entrar
           </button>

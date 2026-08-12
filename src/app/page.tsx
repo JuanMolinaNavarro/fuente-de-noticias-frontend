@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { colorCategoria } from "@/lib/categorias";
+import { Badge } from "@/components/Badge";
 import { Masthead, PiePagina } from "@/components/Masthead";
 
 export const dynamic = "force-dynamic";
@@ -15,23 +15,12 @@ function fechaCorta(d: Date | null) {
   }).format(d);
 }
 
-function Badge({ category }: { category: string | null }) {
-  return (
-    <span
-      className="inline-block px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white"
-      style={{ backgroundColor: colorCategoria(category) }}
-    >
-      {category ?? "Tucumán"}
-    </span>
-  );
-}
-
 function Placa({ category, tall }: { category: string | null; tall?: boolean }) {
   return (
     <div
-      className={`placa flex ${tall ? "h-64" : "h-36"} items-center justify-center border border-hielo`}
+      className={`placa flex ${tall ? "h-64" : "h-36"} items-center justify-center rounded-xl`}
     >
-      <span className="font-display text-6xl font-black text-azul-claro/30">
+      <span className="font-display text-6xl font-black text-azul-claro/35">
         {(category ?? "F").slice(0, 1)}
       </span>
     </div>
@@ -89,7 +78,7 @@ export default async function Portada() {
                 <img
                   src={principal.imageUrl}
                   alt={principal.title ?? ""}
-                  className="h-64 w-full border border-hielo object-cover"
+                  className="h-64 w-full rounded-xl object-cover"
                 />
               ) : (
                 <Placa category={principal.category} tall />
@@ -100,15 +89,18 @@ export default async function Portada() {
 
         {resto.length > 0 && (
           <>
-            <div className="border-t-2 border-azul" />
-            <section className="grid gap-x-8 gap-y-10 py-10 sm:grid-cols-2 lg:grid-cols-3">
-              {resto.map((nota, i) => (
+            <div className="regla-marca" />
+            <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.34em] text-azul-claro">
+              Lo último
+            </p>
+            <section className="grid gap-5 py-6 sm:grid-cols-2 lg:grid-cols-3">
+              {resto.map((nota) => (
                 <article
                   key={nota.id}
-                  className={`${i % 3 !== 0 ? "lg:border-l lg:border-hielo lg:pl-8" : ""}`}
+                  className="tarjeta-hover rounded-xl bg-gris-claro/60 p-6"
                 >
                   <Badge category={nota.category} />
-                  <h3 className="mt-3 font-display text-[22px] font-bold leading-snug text-azul">
+                  <h3 className="mt-3 font-display text-[21px] font-bold leading-snug text-azul">
                     <Link
                       href={`/noticia/${nota.slug}`}
                       className="hover:underline decoration-azul-claro decoration-2 underline-offset-4"
@@ -119,7 +111,7 @@ export default async function Portada() {
                   <p className="mt-3 text-sm font-light leading-relaxed text-gris-oscuro">
                     {nota.summary}
                   </p>
-                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-gris">
+                  <p className="mt-4 border-t border-azul/10 pt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-gris">
                     {nota.sourceName} · {fechaCorta(nota.publishedAt)}
                   </p>
                 </article>

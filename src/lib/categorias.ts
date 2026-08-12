@@ -21,3 +21,7 @@ export function colorCategoria(cat?: string | null) {
   if (!cat) return CATEGORIAS.tucuman;
   return CATEGORIAS[normalizar(cat)] ?? CATEGORIAS.tucuman;
 }
+
+export function esUrgente(cat?: string | null) {
+  return cat != null && normalizar(cat) === "urgente";
+}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
+import { colorCategoria } from "@/lib/categorias";
 import { Isotipo } from "@/components/Masthead";
 import { logoutAction, reviewAction, unpublishAction } from "./actions";
 
@@ -9,11 +10,11 @@ export const dynamic = "force-dynamic";
 
 function Contador({ label, value, alerta }: { label: string; value: number; alerta?: boolean }) {
   return (
-    <div className="border border-borde bg-panel px-5 py-4">
-      <p className={`text-3xl font-bold ${alerta && value > 0 ? "text-urgente" : "text-tiza"}`}>
+    <div className="rounded-xl border border-azul-medio/20 bg-white/[0.02] px-5 py-4">
+      <p className={`font-display text-3xl font-black ${alerta && value > 0 ? "text-urgente" : "text-tiza"}`}>
         {value}
       </p>
-      <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-tiza/50">
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-tiza/50">
         {label}
       </p>
     </div>
@@ -35,17 +36,17 @@ export default async function Admin() {
   ]);
 
   return (
-    <div className="min-h-screen bg-carbon text-tiza">
-      <header className="border-b border-borde">
+    <div className="min-h-screen bg-noche text-tiza">
+      <header className="border-b border-azul-medio/20 bg-noche/95">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">
             <Isotipo size={38} />
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-azul-claro">
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-azul-claro">
                 Sala de redacción
               </p>
-              <h1 className="font-display text-2xl font-bold">
-                Fuente de Noticias
+              <h1 className="font-display text-2xl font-black">
+                Fuente <span className="text-azul-claro">de Noticias</span>
               </h1>
             </div>
           </div>
@@ -57,7 +58,7 @@ export default async function Admin() {
               Ver sitio →
             </Link>
             <form action={logoutAction}>
-              <button className="border border-borde px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-tiza/60 hover:border-azul-claro hover:text-azul-claro">
+              <button className="rounded-lg border border-azul-medio/30 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-tiza/60 transition-colors hover:border-azul-claro hover:text-azul-claro">
                 Salir
               </button>
             </form>
@@ -74,15 +75,15 @@ export default async function Admin() {
         </div>
 
         {ingested > 0 && (
-          <p className="mt-4 border border-borde bg-panel px-4 py-3 text-xs text-tiza/70">
+          <p className="mt-4 rounded-xl border border-azul-medio/20 bg-white/[0.02] px-4 py-3 text-xs text-tiza/70">
             Hay {ingested} artículos ingresados sin procesar. Corré{" "}
             <span className="font-semibold text-azul-claro">npm run ingest</span>{" "}
             para pasarlos a borrador (con ANTHROPIC_API_KEY los redacta la IA).
           </p>
         )}
 
-        <h2 className="mt-10 text-xs font-bold uppercase tracking-[0.25em] text-azul-claro">
-          ▍Borradores pendientes de aprobación
+        <h2 className="mt-10 text-[11px] font-bold uppercase tracking-[0.34em] text-azul-claro">
+          01 — Borradores pendientes de aprobación
         </h2>
 
         {drafts.length === 0 && (
@@ -92,11 +93,11 @@ export default async function Admin() {
           </p>
         )}
 
-        <div className="mt-4 space-y-6">
+        <div className="mt-4 space-y-5">
           {drafts.map((d) => (
             <details
               key={d.id}
-              className="group border border-borde bg-panel open:border-azul-medio"
+              className="group rounded-xl border border-azul-medio/20 bg-white/[0.02] open:border-azul-claro/50"
             >
               <summary className="flex cursor-pointer items-baseline justify-between gap-4 px-5 py-4">
                 <span className="font-display text-lg font-bold leading-snug">
@@ -107,10 +108,10 @@ export default async function Admin() {
                 </span>
               </summary>
 
-              <div className="grid gap-6 border-t border-borde px-5 py-5 lg:grid-cols-2">
+              <div className="grid gap-6 border-t border-azul-medio/20 px-5 py-5 lg:grid-cols-2">
                 {/* Original */}
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-tiza/40">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-tiza/40">
                     Original — {d.sourceName}
                   </p>
                   <p className="mt-3 text-base font-semibold">
@@ -144,62 +145,62 @@ export default async function Admin() {
                 {/* Versión editable */}
                 <form action={reviewAction} className="space-y-3">
                   <input type="hidden" name="id" value={d.id} />
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-azul-claro">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-azul-claro">
                     Nota curada (editable)
                   </p>
                   <input
                     name="title"
                     defaultValue={d.title ?? ""}
                     placeholder="Título"
-                    className="w-full border border-borde bg-carbon px-3 py-2 text-base text-tiza outline-none focus:border-azul-claro"
+                    className="w-full rounded-lg border border-azul-medio/30 bg-noche-2 px-3 py-2 text-base text-tiza outline-none focus:border-azul-claro"
                   />
                   <textarea
                     name="summary"
                     defaultValue={d.summary ?? ""}
                     placeholder="Bajada"
                     rows={2}
-                    className="w-full border border-borde bg-carbon px-3 py-2 text-sm text-tiza outline-none focus:border-azul-claro"
+                    className="w-full rounded-lg border border-azul-medio/30 bg-noche-2 px-3 py-2 text-sm text-tiza outline-none focus:border-azul-claro"
                   />
                   <textarea
                     name="content"
                     defaultValue={d.content ?? ""}
                     placeholder="Cuerpo de la nota"
                     rows={9}
-                    className="w-full border border-borde bg-carbon px-3 py-2 text-sm font-light leading-relaxed text-tiza outline-none focus:border-azul-claro"
+                    className="w-full rounded-lg border border-azul-medio/30 bg-noche-2 px-3 py-2 text-sm font-light leading-relaxed text-tiza outline-none focus:border-azul-claro"
                   />
                   <div className="flex gap-3">
                     <input
                       name="category"
                       defaultValue={d.category ?? ""}
                       placeholder="Categoría (Tucumán, Política, Policial, Economía, Deportes, Cultura, Urgente)"
-                      className="w-1/2 border border-borde bg-carbon px-3 py-2 text-xs text-tiza outline-none focus:border-azul-claro"
+                      className="w-1/2 rounded-lg border border-azul-medio/30 bg-noche-2 px-3 py-2 text-xs text-tiza outline-none focus:border-azul-claro"
                     />
                     <input
                       name="imageUrl"
                       defaultValue={d.imageUrl ?? ""}
                       placeholder="URL de imagen propia o con licencia (opcional)"
-                      className="flex-1 border border-borde bg-carbon px-3 py-2 text-xs text-tiza outline-none focus:border-azul-claro"
+                      className="flex-1 rounded-lg border border-azul-medio/30 bg-noche-2 px-3 py-2 text-xs text-tiza outline-none focus:border-azul-claro"
                     />
                   </div>
                   <div className="flex flex-wrap gap-3 pt-1">
                     <button
                       name="intent"
                       value="approve"
-                      className="bg-azul-medio px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-white hover:bg-azul-claro"
+                      className="rounded-lg bg-azul-medio px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-white transition-colors hover:bg-azul-claro"
                     >
                       ✓ Aprobar y publicar
                     </button>
                     <button
                       name="intent"
                       value="save"
-                      className="border border-borde px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-tiza hover:border-tiza"
+                      className="rounded-lg border border-azul-medio/30 px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-tiza transition-colors hover:border-tiza"
                     >
                       Guardar cambios
                     </button>
                     <button
                       name="intent"
                       value="reject"
-                      className="border border-borde px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-tiza/50 hover:border-urgente hover:text-urgente"
+                      className="rounded-lg border border-azul-medio/30 px-4 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-tiza/50 transition-colors hover:border-urgente hover:text-urgente"
                     >
                       ✗ Rechazar
                     </button>
@@ -212,29 +213,35 @@ export default async function Admin() {
 
         {approved.length > 0 && (
           <>
-            <h2 className="mt-12 text-xs font-bold uppercase tracking-[0.25em] text-azul-claro">
-              ▍Últimas publicadas
+            <h2 className="mt-12 text-[11px] font-bold uppercase tracking-[0.34em] text-azul-claro">
+              02 — Últimas publicadas
             </h2>
-            <ul className="mt-4 divide-y divide-borde border border-borde bg-panel">
+            <ul className="mt-4 overflow-hidden rounded-xl border border-azul-medio/20 bg-white/[0.02]">
               {approved.map((a) => (
                 <li
                   key={a.id}
-                  className="flex items-center justify-between gap-4 px-5 py-3"
+                  className="flex items-center justify-between gap-4 border-b border-azul-medio/10 px-5 py-3 last:border-b-0"
                 >
-                  <div className="min-w-0">
-                    <Link
-                      href={`/noticia/${a.slug}`}
-                      className="truncate font-display text-base font-bold hover:text-azul-claro"
-                    >
-                      {a.title}
-                    </Link>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-tiza/40">
-                      {a.category ?? "Sin categoría"} · {a.sourceName}
-                    </p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className="h-8 w-1.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: colorCategoria(a.category) }}
+                    />
+                    <div className="min-w-0">
+                      <Link
+                        href={`/noticia/${a.slug}`}
+                        className="truncate font-display text-base font-bold hover:text-azul-claro"
+                      >
+                        {a.title}
+                      </Link>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-tiza/40">
+                        {a.category ?? "Sin categoría"} · {a.sourceName}
+                      </p>
+                    </div>
                   </div>
                   <form action={unpublishAction}>
                     <input type="hidden" name="id" value={a.id} />
-                    <button className="shrink-0 border border-borde px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-tiza/50 hover:border-urgente hover:text-urgente">
+                    <button className="shrink-0 rounded-lg border border-azul-medio/30 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-tiza/50 transition-colors hover:border-urgente hover:text-urgente">
                       Despublicar
                     </button>
                   </form>

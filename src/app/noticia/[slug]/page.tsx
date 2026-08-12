@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { colorCategoria } from "@/lib/categorias";
+import { Badge } from "@/components/Badge";
 import { Masthead, PiePagina } from "@/components/Masthead";
 
 export const dynamic = "force-dynamic";
@@ -35,12 +35,7 @@ export default async function Noticia({
     <div>
       <Masthead />
       <main className="mx-auto max-w-3xl px-5 py-12">
-        <span
-          className="inline-block px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white"
-          style={{ backgroundColor: colorCategoria(nota.category) }}
-        >
-          {nota.category ?? "Tucumán"}
-        </span>
+        <Badge category={nota.category} />
         <h1 className="mt-5 font-display text-4xl font-black leading-[1.08] tracking-tight text-azul sm:text-5xl">
           {nota.title}
         </h1>
@@ -56,7 +51,7 @@ export default async function Noticia({
           <img
             src={nota.imageUrl}
             alt={nota.title ?? ""}
-            className="mt-8 w-full border border-hielo object-cover"
+            className="mt-8 w-full rounded-xl object-cover"
           />
         )}
 
@@ -66,7 +61,7 @@ export default async function Noticia({
           ))}
         </div>
 
-        <aside className="mt-12 border-l-4 border-azul-medio bg-hielo p-5">
+        <aside className="mt-12 rounded-xl border border-azul-medio/25 bg-hielo p-6">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-azul">
             Fuente original
           </p>
