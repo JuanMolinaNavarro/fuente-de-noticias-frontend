@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fuente de Noticias
 
-## Getting Started
+**Tu fuente. Tu Tucumán.** — Identidad visual según el Manual de Identidad v1.0
+de Marketing Argentina (Playfair Display + Inter, paleta de azules
+institucionales y colores por categoría editorial).
 
-First, run the development server:
+Sitio de curación de noticias: un worker lee feeds RSS, Claude genera una nota
+propia (resumen con atribución a la fuente), un humano la revisa en el panel de
+administración y recién ahí se publica en el sitio.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Stack
+
+- **Next.js** (App Router) — sitio público + panel de administración
+- **PostgreSQL** (Docker) + **Prisma** — artículos con estados
+- **rss-parser** + **Claude API** — ingesta y redacción de borradores
+
+## Flujo editorial
+
+```
+RSS feed ──ingesta──▶ INGESTED ──IA──▶ DRAFT ──humano──▶ APPROVED (público)
+                                          └──────────────▶ REJECTED
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `INGESTED`: llegó del feed, deduplicado por GUID, sin nota generada.
+- `DRAFT`: nota lista para revisión en `/admin`. Con `ANTHROPIC_API_KEY`
+  configurada la redacta Claude; **sin API key** se copia el material del feed
+  tal cual, para que el editor lo redacte a mano antes de aprobar.
+- `APPROVED`: aprobada por un humano; visible en la portada.
+- `REJECTED`: descartada.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> `scripts/publicar-borradores.ts` aprueba en lote los últimos N borradores —
+> es solo una utilidad de prueba; el flujo normal es aprobar desde `/admin`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Puesta en marcha
 
-## Learn More
+```bash
+# 1. Dependencias
+npm install
 
-To learn more about Next.js, take a look at the following resources:
+# 2. Configuración — editar .env:
+#    ANTHROPIC_API_KEY, ADMIN_PASSWORD, RSS_FEEDS
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# 3. Base de datos
+docker compose up -d
+npm run db:push
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# 4. Ingesta (RSS → IA → borradores). Programarla cada 15-30 min con cron
+#    o el Programador de tareas de Windows.
+npm run ingest
 
-## Deploy on Vercel
+# 5. Sitio
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Sitio público: http://localhost:3000
+- Panel de administración: http://localhost:3000/admin (clave = `ADMIN_PASSWORD`)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Nota legal / editorial
+
+El pipeline está diseñado como **curaduría con atribución**, no como
+reescritura encubierta:
+
+- La IA redacta una nota propia usando los hechos como información; el último
+  párrafo y una caja al pie de cada artículo citan y enlazan la fuente.
+- Las imágenes de los feeds **no se publican** (suelen ser de agencias con
+  copyright). El campo `originalImageUrl` queda como referencia en el panel; el
+  editor puede cargar una `imageUrl` propia, de stock con licencia o generada.
+- Nada se publica sin aprobación humana.
+
+## Pendientes / siguientes pasos
+
+- Almacenamiento propio de imágenes (MinIO, compatible S3) con thumbnails.
+- Autenticación real multi-usuario (el login actual es una clave única en
+  `.env`, suficiente solo para el MVP).
+- Paginación y páginas por categoría en el sitio público.
+- Cron dentro de Docker (`worker` como servicio en docker-compose).

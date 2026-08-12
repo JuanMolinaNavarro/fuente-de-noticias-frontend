@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/*
+ * Tokens del Manual de Identidad — Fuente de Noticias (v1.0)
+ * Tipografía: Playfair Display (titulares) + Inter (cuerpo y UI)
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Paleta principal */
+  --color-azul: #1c3a6b; /* Azul Institucional — headers e identidad */
+  --color-azul-medio: #2e5da6; /* Botones, links, interactivos */
+  --color-azul-claro: #4a80d4; /* Acentos, íconos, etiquetas */
+  --color-hielo: #e8eef8; /* Fondos de sección en web */
+  --color-carbon: #1a1a2e; /* Fondo oscuro (panel) y texto principal */
+  --color-gris-oscuro: #3a3a4a; /* Textos secundarios */
+  --color-gris: #6b7280; /* Captions y metadata */
+  --color-urgente: #e53e3e; /* Última hora — alto impacto */
+
+  /* Derivados para el panel oscuro */
+  --color-panel: #232338;
+  --color-borde: #3a3a4a;
+  --color-tiza: #ededf2;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: var(--color-carbon);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Filete institucional bajo el masthead */
+.regla-doble {
+  border-top: 3px solid var(--color-azul);
+  box-shadow: 0 5px 0 -4px var(--color-azul);
+}
+
+/* Capitular para el cuerpo de las notas */
+.capitular > p:first-of-type::first-letter {
+  font-family: var(--font-display);
+  font-size: 3.3em;
+  line-height: 0.85;
+  float: left;
+  padding-right: 0.1em;
+  padding-top: 0.04em;
+  font-weight: 900;
+  color: var(--color-azul);
+}
+
+/* Placa tipográfica cuando la nota no tiene imagen propia */
+.placa {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(74, 128, 212, 0.14),
+      rgba(74, 128, 212, 0.14) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    var(--color-hielo);
+}
+
+::selection {
+  background: var(--color-azul-medio);
+  color: #ffffff;
 }

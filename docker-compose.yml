@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: frente_noticias_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: frente
+      POSTGRES_PASSWORD: frente_dev_2026
+      POSTGRES_DB: frente_noticias
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
