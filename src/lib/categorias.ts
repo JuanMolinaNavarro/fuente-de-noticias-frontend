@@ -6,8 +6,26 @@ export const CATEGORIAS: Record<string, string> = {
   economia: "#1A7A4A",
   deportes: "#E67E22",
   cultura: "#7B2FBE",
-  urgente: "#E53E3E",
+  // Extensiones a la paleta del manual (propuestas propias)
+  internacional: "#12707E",
+  sociedad: "#B7791F",
+  campo: "#8B5E3C",
+  tecnologia: "#0E9CB8",
 };
+
+// Nombres visibles, para selects/datalists del panel
+export const NOMBRES_CATEGORIAS = [
+  "Tucumán",
+  "Política",
+  "Policial",
+  "Economía",
+  "Deportes",
+  "Cultura",
+  "Internacional",
+  "Sociedad",
+  "Campo",
+  "Tecnología",
+];
 
 function normalizar(cat: string) {
   return cat
@@ -22,6 +40,15 @@ export function colorCategoria(cat?: string | null) {
   return CATEGORIAS[normalizar(cat)] ?? CATEGORIAS.tucuman;
 }
 
-export function esUrgente(cat?: string | null) {
-  return cat != null && normalizar(cat) === "urgente";
+/** "Tucumán" -> "tucuman", para las URLs de sección. */
+export function slugCategoria(cat: string) {
+  return normalizar(cat).replace(/\s+/g, "-");
+}
+
+/** Devuelve el nombre visible de la categoría a partir del slug de la URL. */
+export function categoriaDesdeSlug(slug: string) {
+  return (
+    NOMBRES_CATEGORIAS.find((n) => slugCategoria(n) === slug.toLowerCase()) ??
+    null
+  );
 }

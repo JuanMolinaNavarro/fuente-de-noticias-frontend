@@ -1,76 +1,56 @@
-# Fuente de Noticias
+# Fuente de Noticias — frontend
 
 **Tu fuente. Tu Tucumán.** — Identidad visual según el Manual de Identidad v1.0
-de Marketing Argentina (Playfair Display + Inter, paleta de azules
-institucionales y colores por categoría editorial).
+(Playfair Display + Inter, paleta de azules institucionales y colores por
+sección editorial).
 
-Sitio de curación de noticias: un worker lee feeds RSS, Claude genera una nota
-propia (resumen con atribución a la fuente), un humano la revisa en el panel de
-administración y recién ahí se publica en el sitio.
+Este paquete es el **sitio público** y el **panel de redacción**. No tiene base
+de datos propia: habla con la API NestJS de `../fuente-de-noticias-backend`
+siguiendo el patrón BFF (el browser nunca ve el token ni el backend).
 
 ## Stack
 
-- **Next.js** (App Router) — sitio público + panel de administración
-- **PostgreSQL** (Docker) + **Prisma** — artículos con estados
-- **rss-parser** + **Claude API** — ingesta y redacción de borradores
+- **Next.js 16** (App Router, `proxy.ts`, Server Actions) + React 19
+- **Tailwind v4** (CSS-first: tokens en `src/app/globals.css`)
+- **Tiptap 3** (ProseMirror) para el editor de notas
+- Sin shadcn, sin zod en el front, íconos SVG inline
 
-## Flujo editorial
-
-```
-RSS feed ──ingesta──▶ INGESTED ──IA──▶ DRAFT ──humano──▶ APPROVED (público)
-                                          └──────────────▶ REJECTED
-```
-
-- `INGESTED`: llegó del feed, deduplicado por GUID, sin nota generada.
-- `DRAFT`: nota lista para revisión en `/admin`. Con `ANTHROPIC_API_KEY`
-  configurada la redacta Claude; **sin API key** se copia el material del feed
-  tal cual, para que el editor lo redacte a mano antes de aprobar.
-- `APPROVED`: aprobada por un humano; visible en la portada.
-- `REJECTED`: descartada.
-
-> `scripts/publicar-borradores.ts` aprueba en lote los últimos N borradores —
-> es solo una utilidad de prueba; el flujo normal es aprobar desde `/admin`.
-
-## Puesta en marcha
+## Correr en desarrollo
 
 ```bash
-# 1. Dependencias
+cp .env.example .env     # API_URL del backend
 npm install
-
-# 2. Configuración — editar .env:
-#    ANTHROPIC_API_KEY, ADMIN_PASSWORD, RSS_FEEDS
-
-# 3. Base de datos
-docker compose up -d
-npm run db:push
-
-# 4. Ingesta (RSS → IA → borradores). Programarla cada 15-30 min con cron
-#    o el Programador de tareas de Windows.
-npm run ingest
-
-# 5. Sitio
-npm run dev
+npm run dev              # http://localhost:3000
 ```
 
-- Sitio público: http://localhost:3000
-- Panel de administración: http://localhost:3000/admin (clave = `ADMIN_PASSWORD`)
+El backend tiene que estar corriendo en :4000 (ver su README). Usuarios de
+prueba: `npx prisma db seed -- --demo` en el backend crea `editor@` y
+`redactor@fuentedenoticias.com.ar` (clave `demo_2026`) además del admin.
 
-## Nota legal / editorial
+## Mapa
 
-El pipeline está diseñado como **curaduría con atribución**, no como
-reescritura encubierta:
+```
+src/proxy.ts                   sin cookie → /admin/login (primera puerta; el layout valida)
+src/lib/api.ts                 cliente público (fetch con tags de caché: notas, nota:slug)
+src/lib/admin-api.ts           cliente tipado de /admin/*
+src/lib/auth.ts                cookie httpOnly fdn_token, getSession() (cache), requireSession(roles)
+src/app/admin/login            login
+src/app/admin/(panel)/         layout (Sidebar + Topbar), tablero, notas (bandeja, nueva, [id] editor),
+                               usuarios, feeds, categorias, actividad, cuenta
+src/components/admin/          Sidebar, Topbar, Bandeja, ChipEstado, FormAccion, editor/{EditorNota,CuerpoTiptap}
+src/components/nota/           ArticuloNota + CuerpoNota (render del contentJson, sin dangerouslySetInnerHTML)
+src/app/vista-previa/[token]   vista previa de notas no publicadas (token efímero del panel)
+```
 
-- La IA redacta una nota propia usando los hechos como información; el último
-  párrafo y una caja al pie de cada artículo citan y enlazan la fuente.
-- Las imágenes de los feeds **no se publican** (suelen ser de agencias con
-  copyright). El campo `originalImageUrl` queda como referencia en el panel; el
-  editor puede cargar una `imageUrl` propia, de stock con licencia o generada.
-- Nada se publica sin aprobación humana.
+## Flujo editorial (el estado vive en el backend)
 
-## Pendientes / siguientes pasos
+```
+INGESTED ─▶ DRAFT ──submit──▶ IN_REVIEW ──publish──▶ PUBLISHED
+              ▲ └─── return ────┘   │                   │ unpublish → DRAFT
+              │                     └ publish(scheduledAt) → SCHEDULED ─cron─▶ PUBLISHED
+              └─ spike → SPIKED ─restore─┘
+```
 
-- Almacenamiento propio de imágenes (MinIO, compatible S3) con thumbnails.
-- Autenticación real multi-usuario (el login actual es una clave única en
-  `.env`, suficiente solo para el MVP).
-- Paginación y páginas por categoría en el sitio público.
-- Cron dentro de Docker (`worker` como servicio en docker-compose).
+Roles: `REDACTOR` (crea/edita sus borradores, envía a revisión), `EDITOR`
+(edita todo, devuelve, publica/programa/despublica), `ADMIN` (además usuarios,
+feeds, secciones, actividad).

@@ -1,10 +1,96 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { Badge } from "@/components/Badge";
-import { Masthead, PiePagina } from "@/components/Masthead";
+import type { Metadata } from "next";
+import { listarNotas, notasRelacionadas, obtenerNota } from "@/lib/api";
+import { Masthead } from "@/components/Masthead";
+import { PiePagina } from "@/components/PiePagina";
+import { MuroInstagram } from "@/components/Social";
+import { FilaNota, TarjetaNota } from "@/components/TarjetaNota";
+import { ArticuloNota } from "@/components/nota/ArticuloNota";
+import { SITE_URL } from "@/lib/env";
+import { SITIO } from "@/lib/sitio";
 
-export const dynamic = "force-dynamic";
+/**
+ * Array vacío = ISR bajo demanda: ninguna nota se genera en build (el build
+ * no depende del backend); cada nota se renderiza en su primera visita y el
+ * HTML queda cacheado hasta que venza su revalidate o el panel la actualice
+ * vía updateTag. Sin este export, Next trataría la ruta como 100% dinámica.
+ */
+export async function generateStaticParams() {
+  return [];
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const nota = await obtenerNota(slug);
+  if (!nota) return { title: SITIO.nombre };
+  // Los campos SEO/social del editor mandan; si están vacíos, título y bajada
+  const title = nota.seoTitle || nota.title || SITIO.nombre;
+  const description = nota.seoDescription || nota.summary || undefined;
+  return {
+    title: `${title} — ${SITIO.nombre}`,
+    description,
+    // URL canónica: si la nota llega con parámetros de tracking o desde /ads,
+    // los buscadores saben cuál es la versión "oficial" a indexar.
+    alternates: { canonical: `/noticia/${slug}` },
+    openGraph: {
+      title: nota.socialTitle || nota.title || title,
+      description,
+      type: "article",
+      url: `/noticia/${slug}`,
+      ...(nota.publishedAt && {
+        publishedTime: new Date(nota.publishedAt).toISOString(),
+      }),
+      ...(nota.imageUrl && { images: [nota.imageUrl] }),
+    },
+  };
+}
+
+/**
+ * Datos estructurados schema.org (NewsArticle) para Google News/Discover:
+ * le dicen al buscador qué es cada cosa (titular, fecha, autor, medio) sin
+ * que tenga que adivinarlo del HTML. Se emiten como JSON-LD en un <script>.
+ */
+function jsonLdNota(nota: {
+  slug: string | null;
+  title: string | null;
+  summary: string | null;
+  imageUrl: string | null;
+  featuredMedia: { url: string } | null;
+  publishedAt: Date | null;
+  category: string | null;
+  authors: { name: string }[];
+}) {
+  const url = `${SITE_URL}/noticia/${nota.slug}`;
+  // La media propia llega relativa (/uploads/...); schema.org exige absoluta.
+  const cruda = nota.featuredMedia?.url ?? nota.imageUrl;
+  const imagen = cruda?.startsWith("/") ? `${SITE_URL}${cruda}` : cruda;
+  return {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: nota.title,
+    ...(nota.summary && { description: nota.summary }),
+    ...(imagen && { image: [imagen] }),
+    ...(nota.publishedAt && {
+      datePublished: nota.publishedAt.toISOString(),
+    }),
+    ...(nota.category && { articleSection: nota.category }),
+    author:
+      nota.authors.length > 0
+        ? nota.authors.map((a) => ({ "@type": "Person", name: a.name }))
+        : [{ "@type": "Organization", name: SITIO.nombre }],
+    publisher: {
+      "@type": "Organization",
+      name: SITIO.nombre,
+      url: SITE_URL,
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+  };
+}
 
 export default async function Noticia({
   params,
@@ -12,82 +98,92 @@ export default async function Noticia({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const nota = await prisma.article.findUnique({ where: { slug } });
-  if (!nota || nota.status !== "APPROVED") notFound();
+  const nota = await obtenerNota(slug);
+  if (!nota) notFound();
 
-  const fecha = nota.publishedAt
-    ? new Intl.DateTimeFormat("es-AR", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(nota.publishedAt)
-    : "";
+  // Los espacios publicitarios viven en /ads/noticia/[slug]; acá ese lugar lo
+  // ocupan más publicaciones: lo último publicado que no sea la propia nota
+  // ni una relacionada.
+  const [relacionadas, listado] = await Promise.all([
+    notasRelacionadas(slug),
+    listarNotas({ limit: 20 }),
+  ]);
+  const yaVistas = new Set([nota.id, ...relacionadas.map((r) => r.id)]);
+  const extra = listado.notas.filter((n) => !yaVistas.has(n.id));
 
-  const parrafos = (nota.content ?? "")
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
+  const enFoco = extra.slice(0, 3);
+  const ultimas = extra.slice(3, 11);
 
   return (
     <div>
-      <Masthead />
-      <main className="mx-auto max-w-3xl px-5 py-12">
-        <Badge category={nota.category} />
-        <h1 className="mt-5 font-display text-4xl font-black leading-[1.08] tracking-tight text-azul sm:text-5xl">
-          {nota.title}
-        </h1>
-        <p className="mt-5 text-xl font-light leading-relaxed text-gris-oscuro">
-          {nota.summary}
-        </p>
-        <p className="mt-5 border-y border-hielo py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-gris">
-          {fecha}
-        </p>
+      {/* El replace escapa "<" para que un título malicioso no pueda cerrar
+          el script e inyectar HTML (la serialización estándar de JSON-LD). */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLdNota(nota)).replace(/</g, "\\u003c"),
+        }}
+      />
+      <Masthead seccionActiva={nota.category ?? undefined} />
 
-        {nota.imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={nota.imageUrl}
-            alt={nota.title ?? ""}
-            className="mt-8 w-full rounded-xl object-cover"
-          />
-        )}
+      <main className="contenedor pt-8">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_332px]">
+          <div className="min-w-0">
+            <article className="mx-auto max-w-3xl">
+              <ArticuloNota nota={nota} />
 
-        <div className="capitular mt-9 space-y-6 text-[17px] leading-[1.8] text-carbon">
-          {parrafos.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+              {enFoco.length > 0 && (
+                <section className="mt-10 grid gap-6 sm:grid-cols-3">
+                  {enFoco.map((n) => (
+                    <TarjetaNota key={n.id} nota={n} variante="media" />
+                  ))}
+                </section>
+              )}
+
+              {relacionadas.length > 0 && (
+                <section className="mt-12">
+                  <div className="regla-marca" />
+                  <h2 className="mt-6 text-[11px] font-bold uppercase tracking-[0.34em] text-azul-claro">
+                    Seguí leyendo
+                  </h2>
+                  <div className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                    {relacionadas.map((r) => (
+                      <FilaNota key={r.id} nota={r} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <p className="mt-10">
+                <Link
+                  href="/"
+                  className="text-xs font-semibold uppercase tracking-[0.2em] text-gris hover:text-azul-medio"
+                >
+                  ← Volver a la portada
+                </Link>
+              </p>
+            </article>
+          </div>
+
+          {/* ── Columna lateral: últimas noticias y redes ─────────────── */}
+          <aside className="space-y-8 lg:border-l lg:border-hielo lg:pl-8">
+            {ultimas.length > 0 && (
+              <section>
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.34em] text-azul-claro">
+                  Últimas noticias
+                </h2>
+                <div className="mt-4 space-y-5">
+                  {ultimas.map((n) => (
+                    <FilaNota key={n.id} nota={n} />
+                  ))}
+                </div>
+              </section>
+            )}
+            <MuroInstagram />
+          </aside>
         </div>
-
-        <aside className="mt-12 rounded-xl border border-azul-medio/25 bg-hielo p-6">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-azul">
-            Fuente original
-          </p>
-          <p className="mt-2 text-[15px] leading-relaxed text-gris-oscuro">
-            Esta nota fue elaborada por nuestra redacción a partir de
-            información publicada por <strong>{nota.sourceName}</strong>.{" "}
-            <a
-              href={nota.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-azul-medio underline underline-offset-2"
-            >
-              Leer la cobertura original →
-            </a>
-          </p>
-        </aside>
-
-        <p className="mt-10">
-          <Link
-            href="/"
-            className="text-xs font-semibold uppercase tracking-[0.2em] text-gris hover:text-azul-medio"
-          >
-            ← Volver a la portada
-          </Link>
-        </p>
       </main>
+
       <PiePagina />
     </div>
   );

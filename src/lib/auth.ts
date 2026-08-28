@@ -1,26 +1,35 @@
-import { createHash } from "crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { apiFetch, ApiError } from "@/lib/api";
 
-const COOKIE = "fdn_admin";
+/**
+ * La sesión es un JWT emitido por el backend NestJS.
+ * El browser solo ve esta cookie httpOnly; el token viaja del servidor de
+ * Next a la API como header Authorization (patrón BFF).
+ */
+const COOKIE = "fdn_token";
 
-function tokenFor(password: string) {
-  return createHash("sha256").update(`fdn:${password}`).digest("hex");
-}
+export type Rol = "ADMIN" | "EDITOR" | "REDACTOR";
 
-export function validPassword(password: string) {
-  return password.length > 0 && password === process.env.ADMIN_PASSWORD;
-}
+export type Usuario = {
+  id: string;
+  email: string;
+  name: string;
+  role: Rol;
+};
 
-export function sessionToken() {
-  return tokenFor(process.env.ADMIN_PASSWORD ?? "");
-}
+export type Sesion = { token: string; user: Usuario };
 
-export async function setSession() {
-  (await cookies()).set(COOKIE, sessionToken(), {
+export async function setSession(token: string) {
+  (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
+    // En producción la cookie sólo viaja por HTTPS; en dev (http://localhost)
+    // `secure` la haría desaparecer.
+    secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 12,
+    maxAge: 60 * 60 * 12, // 12 h, igual que la expiración del JWT
   });
 }
 
@@ -28,7 +37,36 @@ export async function clearSession() {
   (await cookies()).delete(COOKIE);
 }
 
-export async function isAdmin() {
-  const value = (await cookies()).get(COOKIE)?.value;
-  return value === sessionToken();
+export async function getToken(): Promise<string | null> {
+  return (await cookies()).get(COOKIE)?.value ?? null;
+}
+
+/**
+ * Sesión validada contra el backend (firma, expiración, usuario activo, rol
+ * fresco). Envuelta en React `cache()`: dentro de un mismo render (layout +
+ * page + componentes) se consulta /auth/me UNA vez, no una por componente.
+ * Devuelve null si no hay sesión o el token ya no sirve.
+ */
+export const getSession = cache(async (): Promise<Sesion | null> => {
+  const token = await getToken();
+  if (!token) return null;
+  try {
+    const user = await apiFetch<Usuario>("/auth/me", { token });
+    return { token, user };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return null;
+    throw error; // API caída ≠ sesión inválida: mejor error visible que login infinito
+  }
+});
+
+/** Para páginas y actions: exige sesión (y opcionalmente ciertos roles). */
+export async function requireSession(...roles: Rol[]): Promise<Sesion> {
+  const sesion = await getSession();
+  if (!sesion) redirect("/admin/login");
+  if (roles.length && !roles.includes(sesion.user.role)) redirect("/admin?sin-permiso=1");
+  return sesion;
+}
+
+export function esEditor(role: Rol) {
+  return role === "ADMIN" || role === "EDITOR";
 }

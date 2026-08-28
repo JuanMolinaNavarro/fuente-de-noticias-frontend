@@ -1,0 +1,10 @@
+# Qué NO entra al contexto de build: dependencias (se instalan adentro),
+# builds previos y los .env (los secretos van por variables del contenedor).
+node_modules
+.next
+.env
+.env.*
+.git
+*.md
+Dockerfile
+.dockerignore

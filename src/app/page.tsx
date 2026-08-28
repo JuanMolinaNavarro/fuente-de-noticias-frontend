@@ -1,48 +1,58 @@
-import Link from "next/link";
-import { prisma } from "@/lib/db";
-import { Badge } from "@/components/Badge";
-import { Masthead, PiePagina } from "@/components/Masthead";
+import { obtenerPortadaAmpliada } from "@/lib/api";
+import { Masthead } from "@/components/Masthead";
+import { Mercados } from "@/components/Mercados";
+import { PiePagina } from "@/components/PiePagina";
+import { UltimaHora } from "@/components/UltimaHora";
+import { MuroInstagram } from "@/components/Social";
+import { Mosaico } from "@/components/Mosaico";
+import { FilaNota, TarjetaNota } from "@/components/TarjetaNota";
 
-export const dynamic = "force-dynamic";
-
-function fechaCorta(d: Date | null) {
-  if (!d) return "";
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
-}
-
-function Placa({ category, tall }: { category: string | null; tall?: boolean }) {
-  return (
-    <div
-      className={`placa flex ${tall ? "h-64" : "h-36"} items-center justify-center rounded-xl`}
-    >
-      <span className="font-display text-6xl font-black text-azul-claro/35">
-        {(category ?? "F").slice(0, 1)}
-      </span>
-    </div>
-  );
+/**
+ * La portada es una ruta estática con ISR: next build la prerenderiza sin
+ * backend disponible (Docker), y en runtime se regenera sola según el
+ * revalidate de sus fetch (60 s) o al instante cuando el panel publica
+ * (updateTag). Si el backend no responde durante una regeneración, el
+ * catch devuelve la tapa vacía y Next sigue sirviendo la última versión
+ * buena que tenga cacheada.
+ */
+async function cargarPortada() {
+  try {
+    return await obtenerPortadaAmpliada();
+  } catch {
+    return {
+      principal: null,
+      destacadas: [],
+      mas: [],
+      extra: [],
+      breaking: [],
+      curadaAt: null,
+    };
+  }
 }
 
 export default async function Portada() {
-  const notas = await prisma.article.findMany({
-    where: { status: "APPROVED" },
-    orderBy: { publishedAt: "desc" },
-    take: 13,
-  });
+  // La home la arma la redacción (curación por zonas, /admin/portada) y el
+  // backend rellena con lo último publicado donde no haya nada curado. Los
+  // módulos extra (En foco, Últimas, Seguí leyendo) toman lo publicado que
+  // quedó fuera de la curación; la versión con avisos vive en /ads.
+  const { principal, destacadas, mas: secundarias, extra, breaking } =
+    await cargarPortada();
 
-  const [principal, ...resto] = notas;
+  const enFoco = extra.slice(0, 3);
+  const ultimas = extra.slice(3, 11);
+  const seguiLeyendo = extra.slice(11, 19);
 
   return (
     <div>
-      <Masthead />
-      <main className="mx-auto max-w-6xl px-5">
+      <Masthead titular />
+      <UltimaHora notas={breaking} />
+      {/* Franja de cotizaciones pegada a la navegación, como en la tapa */}
+      <Mercados />
+
+      <main className="contenedor pt-8">
         {!principal && (
           <div className="py-28 text-center">
-            <p className="font-display text-3xl font-bold text-azul">
+            <p className="font-display text-3xl text-azul">
               La redacción está trabajando.
             </p>
             <p className="mt-3 text-xs uppercase tracking-[0.25em] text-gris">
@@ -52,74 +62,67 @@ export default async function Portada() {
           </div>
         )}
 
-        {principal && (
-          <article className="grid gap-8 py-10 lg:grid-cols-5">
-            <div className="lg:col-span-3">
-              <Badge category={principal.category} />
-              <h2 className="mt-4 font-display text-4xl font-black leading-[1.08] tracking-tight text-azul sm:text-5xl">
-                <Link
-                  href={`/noticia/${principal.slug}`}
-                  className="hover:underline decoration-azul-claro decoration-3 underline-offset-6"
-                >
-                  {principal.title}
-                </Link>
-              </h2>
-              <p className="mt-5 max-w-2xl text-lg font-light leading-relaxed text-gris-oscuro">
-                {principal.summary}
-              </p>
-              <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-gris">
-                Fuente: {principal.sourceName} ·{" "}
-                {fechaCorta(principal.publishedAt)}
-              </p>
-            </div>
-            <div className="lg:col-span-2">
-              {principal.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={principal.imageUrl}
-                  alt={principal.title ?? ""}
-                  className="h-64 w-full rounded-xl object-cover"
-                />
-              ) : (
-                <Placa category={principal.category} tall />
-              )}
-            </div>
-          </article>
-        )}
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_332px]">
+          {/* ── Columna editorial ─────────────────────────────────────── */}
+          <div className="min-w-0">
+            <Mosaico principal={principal} destacadas={destacadas} />
 
-        {resto.length > 0 && (
-          <>
-            <div className="regla-marca" />
-            <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.34em] text-azul-claro">
-              Lo último
-            </p>
-            <section className="grid gap-5 py-6 sm:grid-cols-2 lg:grid-cols-3">
-              {resto.map((nota) => (
-                <article
-                  key={nota.id}
-                  className="tarjeta-hover rounded-xl bg-gris-claro/60 p-6"
-                >
-                  <Badge category={nota.category} />
-                  <h3 className="mt-3 font-display text-[21px] font-bold leading-snug text-azul">
-                    <Link
-                      href={`/noticia/${nota.slug}`}
-                      className="hover:underline decoration-azul-claro decoration-2 underline-offset-4"
-                    >
-                      {nota.title}
-                    </Link>
-                  </h3>
-                  <p className="mt-3 text-sm font-light leading-relaxed text-gris-oscuro">
-                    {nota.summary}
-                  </p>
-                  <p className="mt-4 border-t border-azul/10 pt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-gris">
-                    {nota.sourceName} · {fechaCorta(nota.publishedAt)}
-                  </p>
-                </article>
-              ))}
-            </section>
-          </>
-        )}
+            {enFoco.length > 0 && (
+              <section className="my-8 grid gap-6 sm:grid-cols-3">
+                {enFoco.map((nota) => (
+                  <TarjetaNota key={nota.id} nota={nota} variante="media" />
+                ))}
+              </section>
+            )}
+
+            {secundarias.length > 0 && (
+              <>
+                <div className="regla-marca" />
+                <h2 className="mt-8 text-[11px] font-bold uppercase tracking-[0.34em] text-azul">
+                  Más noticias
+                </h2>
+                <section className="grid gap-x-8 gap-y-5 py-6 sm:grid-cols-2">
+                  {secundarias.map((nota) => (
+                    <FilaNota key={nota.id} nota={nota} />
+                  ))}
+                </section>
+              </>
+            )}
+          </div>
+
+          {/* ── Columna lateral: últimas noticias y redes ─────────────── */}
+          <aside className="space-y-8 lg:border-l lg:border-hielo lg:pl-8">
+            {ultimas.length > 0 && (
+              <section>
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.34em] text-azul">
+                  Últimas noticias
+                </h2>
+                <div className="mt-4 space-y-5">
+                  {ultimas.map((nota) => (
+                    <FilaNota key={nota.id} nota={nota} />
+                  ))}
+                </div>
+              </section>
+            )}
+            <MuroInstagram />
+          </aside>
+        </div>
       </main>
+
+      {seguiLeyendo.length > 0 && (
+        <section className="contenedor py-10">
+          <div className="regla-marca" />
+          <h2 className="mt-8 text-[11px] font-bold uppercase tracking-[0.34em] text-azul">
+            Seguí leyendo
+          </h2>
+          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {seguiLeyendo.map((nota) => (
+              <TarjetaNota key={nota.id} nota={nota} variante="media" />
+            ))}
+          </div>
+        </section>
+      )}
+
       <PiePagina />
     </div>
   );

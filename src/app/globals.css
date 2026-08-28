@@ -2,11 +2,25 @@
 
 /*
  * Tokens del Manual de Identidad — Fuente de Noticias (v1.0)
- * Tipografía: Playfair Display (titulares) + Inter (cuerpo y UI)
+ * Tipografía (rediseño editorial 2026): DM Serif Text (titulares, un solo
+ * peso 400) + Noticia Text (cuerpo del sitio público). El panel de
+ * administración comparte los titulares en DM Serif y usa Inter para la UI
+ * (labels, tablas, formularios): `.panel-admin` solo redefine --texto.
  */
+:root {
+  --titulares: var(--font-dm-serif), Georgia, serif;
+  --texto: var(--font-noticia), Georgia, serif;
+}
+.panel-admin {
+  --texto: var(--font-inter), system-ui, sans-serif;
+  /* El body resuelve su fuente fuera de este ámbito, así que el panel
+     tiene que volver a aplicarla para que rija su propia --texto. */
+  font-family: var(--texto);
+}
+
 @theme inline {
-  --font-display: var(--font-playfair), Georgia, serif;
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--titulares);
+  --font-sans: var(--texto);
 
   /* Paleta principal */
   --color-azul: #1c3a6b; /* Azul Institucional — headers e identidad */
@@ -33,6 +47,36 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Ancho de página: masthead, navegación, portada y pie comparten esta caja */
+.contenedor {
+  width: 100%;
+  max-width: 78rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+/* Espacio publicitario: mantiene reservado el alto del formato para que la
+   carga del aviso no empuje el contenido. Las proporciones las pone el
+   componente <Publicidad> según el formato IAB. */
+.aviso {
+  width: 100%;
+  aspect-ratio: var(--proporcion-movil);
+}
+@media (min-width: 640px) {
+  .aviso {
+    aspect-ratio: var(--proporcion);
+  }
+}
+
+/* Barra de secciones desplazable en mobile, sin scrollbar visible */
+.sin-barra {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sin-barra::-webkit-scrollbar {
+  display: none;
+}
+
 /* Divisor de marca: degradado Azul Medio → Azul Claro */
 .regla-marca {
   height: 3px;
@@ -52,7 +96,7 @@ body {
   float: left;
   padding-right: 0.1em;
   padding-top: 0.04em;
-  font-weight: 900;
+  font-weight: 400; /* DM Serif Text solo trae 400 */
   color: var(--color-azul);
 }
 
@@ -65,6 +109,42 @@ body {
       transparent 70%
     ),
     linear-gradient(135deg, var(--color-hielo) 0%, #dde6f5 100%);
+}
+
+/* Ticker de última hora: la pista lleva dos copias idénticas del grupo de
+   notas y se desplaza exactamente un grupo (-50%), así el bucle es continuo.
+   La duración la pone el componente según la cantidad de notas. */
+.ticker {
+  overflow: hidden;
+}
+.ticker-pista {
+  display: flex;
+  width: max-content;
+  animation: ticker-desplazar var(--duracion-ticker, 60s) linear infinite;
+}
+.ticker:hover .ticker-pista {
+  animation-play-state: paused;
+}
+@keyframes ticker-desplazar {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+/* Sin animaciones: fila estática desplazable, sin la copia duplicada */
+@media (prefers-reduced-motion: reduce) {
+  .ticker {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ticker-pista {
+    animation: none;
+  }
+  .ticker-copia {
+    display: none;
+  }
 }
 
 /* Punto parpadeante para URGENTE (breaking bar del manual) */
@@ -85,18 +165,27 @@ body {
   }
 }
 
-/* Tarjeta con elevación al pasar el mouse (lenguaje del sistema digital) */
-.tarjeta-hover {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-.tarjeta-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(28, 58, 107, 0.12);
-}
-
 ::selection {
   background: var(--color-azul-medio);
   color: #ffffff;
 }
+
+/* ── Editor de notas (Tiptap) y render del cuerpo ─────────────────────
+   Una sola hoja para el editor y para la nota publicada (CuerpoNota): lo
+   que el redactor ve mientras escribe es lo que ve el lector. */
+.prose-fdn > * + * { margin-top: 1.1em; }
+.prose-fdn h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.5em; line-height: 1.2; color: var(--color-azul); margin-top: 1.6em; }
+.prose-fdn h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.2em; line-height: 1.3; color: var(--color-azul); margin-top: 1.4em; }
+.prose-fdn blockquote { border-left: 3px solid var(--color-azul-claro); padding: 0.25em 0 0.25em 1.1em; font-family: var(--font-display); font-size: 1.15em; font-style: italic; color: var(--color-azul); }
+.prose-fdn blockquote footer { margin-top: 0.4em; font-family: var(--font-sans); font-size: 0.75em; font-style: normal; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--color-gris); }
+.prose-fdn ul { list-style: disc; padding-left: 1.4em; }
+.prose-fdn ol { list-style: decimal; padding-left: 1.4em; }
+.prose-fdn li + li { margin-top: 0.35em; }
+.prose-fdn a { color: var(--color-azul-medio); text-decoration: underline; text-underline-offset: 3px; }
+.prose-fdn strong { font-weight: 700; }
+/* placeholder de Tiptap (primer párrafo vacío) */
+.prose-fdn p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: var(--color-gris); opacity: 0.6; }
+/* imágenes dentro del cuerpo (nodo image) */
+.prose-fdn figure { margin: 1.8em 0; }
+.prose-fdn figure img { width: 100%; border-radius: 0.75rem; }
+.prose-fdn figcaption { margin-top: 0.5em; font-size: 0.85em; line-height: 1.5; color: var(--color-gris-oscuro); }
