@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { obtenerPortadaAmpliada } from "@/lib/api";
 import { Masthead } from "@/components/Masthead";
 import { Mercados } from "@/components/Mercados";
@@ -6,6 +7,14 @@ import { UltimaHora } from "@/components/UltimaHora";
 import { MuroInstagram } from "@/components/Social";
 import { Mosaico } from "@/components/Mosaico";
 import { FilaNota, TarjetaNota } from "@/components/TarjetaNota";
+
+/* Canónica y og:url de la tapa (metadataBase las vuelve absolutas). La
+   imagen por defecto hace que compartir el sitio en WhatsApp/Facebook
+   muestre la marca en vez de un link pelado. */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { url: "/", images: ["/og-default.png"] },
+};
 
 /**
  * La portada es una ruta estática con ISR: next build la prerenderiza sin

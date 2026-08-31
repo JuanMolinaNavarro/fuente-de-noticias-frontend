@@ -20,9 +20,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const categoria = categoriaDesdeSlug(slug);
-  const title = categoria
-    ? `${categoria} — ${SITIO.nombre}`
-    : `Sección — ${SITIO.nombre}`;
+  // Título crudo: el template del layout ya le suma "— Fuente de Noticias".
+  const title = categoria ?? "Sección";
   const description = categoria
     ? `Últimas noticias de ${categoria} en ${SITIO.nombre}. ${SITIO.lema}`
     : SITIO.descripcion;
@@ -57,7 +56,10 @@ export default async function Seccion({
   if (!cat) notFound();
   const categoria = cat.nombre;
 
-  const { notas } = await listarNotas({ category: categoria, limit: 24 });
+  // Con fallback: la sección se muestra vacía (no rota) si el backend tose.
+  const { notas } = await listarNotas({ category: categoria, limit: 24 }).catch(
+    () => ({ notas: [], total: 0 }),
+  );
 
   const grilla = notas.slice(0, 6);
   const listado = notas.slice(6);

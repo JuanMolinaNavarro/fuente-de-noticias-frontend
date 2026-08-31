@@ -43,7 +43,11 @@ export const metadata: Metadata = {
     siteName: "Fuente de Noticias",
     locale: "es_AR",
     type: "website",
+    // Default para toda página que no defina su propio openGraph (las notas
+    // y la home lo pisan con el suyo — el merge de metadata es superficial).
+    images: ["/og-default.png"],
   },
+  twitter: { card: "summary_large_image" },
   alternates: {
     types: { "application/rss+xml": "/rss.xml" },
   },

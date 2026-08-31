@@ -27,12 +27,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const nota = await obtenerNota(slug);
-  if (!nota) return { title: SITIO.nombre };
+  // absolute: sin el template del layout, que agregaría "— Fuente de
+  // Noticias" a un título que ya es el nombre del sitio.
+  if (!nota) return { title: { absolute: SITIO.nombre } };
   // Los campos SEO/social del editor mandan; si están vacíos, título y bajada
   const title = nota.seoTitle || nota.title || SITIO.nombre;
   const description = nota.seoDescription || nota.summary || undefined;
   return {
-    title: `${title} — ${SITIO.nombre}`,
+    // Título crudo: el template del layout ya le suma "— Fuente de Noticias".
+    title,
     description,
     // URL canónica: si la nota llega con parámetros de tracking o desde /ads,
     // los buscadores saben cuál es la versión "oficial" a indexar.
@@ -45,7 +48,9 @@ export async function generateMetadata({
       ...(nota.publishedAt && {
         publishedTime: new Date(nota.publishedAt).toISOString(),
       }),
-      ...(nota.imageUrl && { images: [nota.imageUrl] }),
+      // Las notas sin imagen se comparten con la placa de la marca: un link
+      // sin miniatura en WhatsApp/Facebook pierde la mitad de los clics.
+      images: [nota.imageUrl || "/og-default.png"],
     },
   };
 }
@@ -104,9 +109,11 @@ export default async function Noticia({
   // Los espacios publicitarios viven en /ads/noticia/[slug]; acá ese lugar lo
   // ocupan más publicaciones: lo último publicado que no sea la propia nota
   // ni una relacionada.
+  // Con fallback: si el backend tose, la nota sale igual — solo sin los
+  // módulos laterales. Sin el catch, un 500 acá tumba la página entera.
   const [relacionadas, listado] = await Promise.all([
-    notasRelacionadas(slug),
-    listarNotas({ limit: 20 }),
+    notasRelacionadas(slug).catch(() => []),
+    listarNotas({ limit: 20 }).catch(() => ({ notas: [], total: 0 })),
   ]);
   const yaVistas = new Set([nota.id, ...relacionadas.map((r) => r.id)]);
   const extra = listado.notas.filter((n) => !yaVistas.has(n.id));

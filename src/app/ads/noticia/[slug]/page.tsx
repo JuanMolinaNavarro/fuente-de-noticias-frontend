@@ -24,10 +24,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const nota = await obtenerNota(slug);
-  if (!nota) return { title: SITIO.nombre, robots: { index: false, follow: false } };
-  const title = nota.seoTitle || nota.title || SITIO.nombre;
+  if (!nota)
+    return {
+      title: { absolute: SITIO.nombre },
+      robots: { index: false, follow: false },
+    };
   return {
-    title: `${title} — ${SITIO.nombre}`,
+    // Título crudo: el template del layout ya le suma "— Fuente de Noticias".
+    title: nota.seoTitle || nota.title || SITIO.nombre,
     robots: { index: false, follow: false },
   };
 }

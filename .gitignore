@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — la plantilla sí se versiona (documenta API_URL/SITE_URL)
 .env*
+!.env.example
 
 # vercel
 .vercel
