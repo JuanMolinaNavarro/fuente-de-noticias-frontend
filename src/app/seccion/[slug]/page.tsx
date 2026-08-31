@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { listarNotas, obtenerCategorias } from "@/lib/api";
 import { Masthead } from "@/components/Masthead";
 import { PiePagina } from "@/components/PiePagina";
-import { Publicidad } from "@/components/Publicidad";
 import { MuroInstagram } from "@/components/Social";
 import { FilaNota, TarjetaNota } from "@/components/TarjetaNota";
 import { categoriaDesdeSlug, colorCategoria } from "@/lib/categorias";
@@ -67,10 +66,6 @@ export default async function Seccion({
     <div>
       <Masthead seccionActiva={categoria} />
 
-      <div className="contenedor pt-6">
-        <Publicidad id="seccion-cabecera" formato="megabanner" />
-      </div>
-
       <main className="contenedor pt-8">
         <header className="pb-6">
           <h1
@@ -99,14 +94,8 @@ export default async function Seccion({
                   ))}
                 </section>
 
-                <Publicidad
-                  id="seccion-intercalado"
-                  formato="banner"
-                  className="my-8"
-                />
-
                 {listado.length > 0 && (
-                  <section className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                  <section className="mt-8 grid gap-x-8 gap-y-5 sm:grid-cols-2">
                     {listado.map((nota) => (
                       <FilaNota key={nota.id} nota={nota} />
                     ))}
@@ -117,10 +106,7 @@ export default async function Seccion({
           </div>
 
           <aside className="space-y-8 lg:border-l lg:border-hielo lg:pl-8">
-            <Publicidad id="seccion-lateral-1" formato="caja" />
             <MuroInstagram />
-            <Publicidad id="seccion-lateral-2" formato="caja" />
-            <Publicidad id="seccion-lateral-3" formato="rascacielos" />
           </aside>
         </div>
       </main>

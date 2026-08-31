@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { ApiError, TAGS } from "@/lib/api";
-import { requireSession, type Rol } from "@/lib/auth";
+import { clearSession, requireSession, type Rol } from "@/lib/auth";
 import {
   actualizarCategoria,
   actualizarFeed,
@@ -86,11 +86,18 @@ export async function cambiarPasswordAction(_p: EstadoForm, fd: FormData): Promi
   const { token } = await requireSession();
   const nueva = s(fd, "newPassword");
   if (nueva !== s(fd, "confirm")) return { ok: false, error: "Las contraseñas nuevas no coinciden." };
-  return intentar(
-    () => cambiarPassword(token, s(fd, "currentPassword"), nueva),
-    "Contraseña actualizada.",
-    "/admin/cuenta",
-  );
+  try {
+    await cambiarPassword(token, s(fd, "currentPassword"), nueva);
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error;
+    if (error.status === 401) return { ok: false, error: "La contraseña actual no es correcta." };
+    return { ok: false, error: error.message };
+  }
+  // El backend revoca TODAS las sesiones al cambiar la clave (si alguien robó
+  // el token, muere acá). La actual también: cookie afuera y a loguearse de
+  // nuevo con la contraseña nueva.
+  await clearSession();
+  redirect("/admin/login?clave=actualizada");
 }
 
 /* ── Feeds (ADMIN) ───────────────────────────────────────────────────── */

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ApiError } from "@/lib/api";
 import { requireSession } from "@/lib/auth";
-import { actualizarMedia, listarMedia, subirMedia, type Media } from "@/lib/admin-api";
+import { actualizarMedia, borrarMedia, listarMedia, subirMedia, type Media } from "@/lib/admin-api";
 import type { EstadoForm } from "@/components/admin/FormAccion";
 
 export type ResultadoMedia<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
@@ -59,6 +59,25 @@ export async function actualizarMediaAction(
   } catch (error) {
     return fallo(error);
   }
+}
+
+/** Borra una imagen (EDITOR/ADMIN). El backend responde 409 si es la
+ *  destacada de alguna nota: primero hay que quitarla de ahí. */
+export async function borrarMediaAction(id: string): Promise<ResultadoMedia<undefined>> {
+  const { token } = await requireSession("ADMIN", "EDITOR");
+  try {
+    await borrarMedia(token, id);
+    revalidatePath("/admin/media");
+    return { ok: true, data: undefined };
+  } catch (error) {
+    return fallo(error);
+  }
+}
+
+/** Variante para FormAccion del borrado. */
+export async function borrarMediaFormAction(_p: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const r = await borrarMediaAction(String(fd.get("id")));
+  return r.ok ? { ok: true, mensaje: "Imagen borrada." } : { ok: false, error: r.error };
 }
 
 /** Variante para FormAccion (formularios de la página de biblioteca). */

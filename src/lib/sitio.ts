@@ -74,34 +74,3 @@ export const INSTAGRAM = {
   posts: [] as string[],
 };
 
-export type Enlace = { texto: string; href: string };
-
-/** Columna "El medio" del pie. */
-export const ENLACES_MEDIO: Enlace[] = [
-  { texto: "Quiénes somos", href: "#" }, // TODO: crear página institucional
-  { texto: "Línea editorial", href: "#" }, // TODO: crear página institucional
-  { texto: "Contacto", href: `mailto:${SITIO.emailRedaccion}` },
-  {
-    texto: "Enviá tu noticia",
-    href: `mailto:${SITIO.emailRedaccion}?subject=${encodeURIComponent("Tengo una noticia")}`,
-  },
-  {
-    texto: "Trabajá con nosotros",
-    href: `mailto:${SITIO.emailRedaccion}?subject=${encodeURIComponent("Postulación")}`,
-  },
-];
-
-/** Columna "Servicios" del pie. */
-export const ENLACES_SERVICIOS: Enlace[] = [
-  {
-    texto: "Anunciá con nosotros",
-    href: `mailto:${SITIO.emailComercial}?subject=${encodeURIComponent("Consulta comercial")}`,
-  },
-  {
-    texto: "Newsletter",
-    href: `mailto:${SITIO.emailRedaccion}?subject=${encodeURIComponent("Suscripción al newsletter")}`,
-  },
-  { texto: "Fe de erratas", href: "#" }, // TODO: crear página institucional
-  { texto: "Términos y condiciones", href: "#" }, // TODO: crear página legal
-  { texto: "Política de privacidad", href: "#" }, // TODO: crear página legal
-];

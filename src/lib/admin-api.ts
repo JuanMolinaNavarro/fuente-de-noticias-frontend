@@ -81,7 +81,9 @@ export type NotaDetalle = Omit<NotaFila, "source" | "featuredMedia"> & {
   reviewedBy: Persona | null;
   source: FuenteCompleta | null;
   tags: { tag: { id: string; name: string; slug: string } }[];
-  authors: { order: number; user: Persona & { email: string } }[];
+  // Sin email: el backend dejó de exponerlo en el detalle (lo ve cualquier
+  // rol; los correos viven en /admin/users, sólo ADMIN).
+  authors: { order: number; user: Persona }[];
   _count: { revisions: number };
 };
 
@@ -374,6 +376,14 @@ export async function cambiarPassword(
   });
 }
 
+/**
+ * Revoca los tokens del usuario en el backend. Borrar la cookie no alcanza:
+ * un token robado seguiría valiendo hasta expirar; esto lo mata ya.
+ */
+export async function cerrarSesionBackend(token: string) {
+  return apiFetch<void>("/auth/logout", { method: "POST", token });
+}
+
 /* ── Feeds y categorías ──────────────────────────────────────────────── */
 
 export async function listarFeeds(token: string) {
@@ -526,6 +536,11 @@ export async function actualizarMedia(
     token,
   });
   return conFechaMedia(m);
+}
+
+/** Sólo EDITOR/ADMIN; el backend responde 409 si la imagen es destacada de alguna nota. */
+export async function borrarMedia(token: string, id: string) {
+  return apiFetch<void>(`/admin/media/${id}`, { method: "DELETE", token });
 }
 
 /* ── Portada ─────────────────────────────────────────────────────────── */

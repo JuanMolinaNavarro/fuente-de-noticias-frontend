@@ -1,39 +1,33 @@
 import Link from "next/link";
 import { Isotipo } from "@/components/Marca";
 import { IconoRed } from "@/components/IconoRed";
-import { slugCategoria } from "@/lib/categorias";
-import {
-  ENLACES_MEDIO,
-  ENLACES_SERVICIOS,
-  REDES,
-  SECCIONES_NAV,
-  SITIO,
-  type Enlace,
-} from "@/lib/sitio";
+import { obtenerCategorias } from "@/lib/api";
+import { NOMBRES_CATEGORIAS, slugCategoria } from "@/lib/categorias";
+import { REDES, SITIO } from "@/lib/sitio";
 
-function Columna({ titulo, enlaces }: { titulo: string; enlaces: Enlace[] }) {
-  return (
-    <div>
-      <h3 className="text-[11px] font-bold uppercase tracking-[0.22em] text-azul">
-        {titulo}
-      </h3>
-      <ul className="mt-4 space-y-2.5">
-        {enlaces.map((e) => (
-          <li key={e.texto}>
-            <a
-              href={e.href}
-              className="text-[13px] text-gris-oscuro transition-colors hover:text-azul-medio"
-            >
-              {e.texto}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+/* Todas las secciones del diario, en el orden definido por la redacción
+   (campo `order` de Category). Si la API no responde, cae al catálogo
+   estático local. */
+async function listarSecciones(): Promise<{ nombre: string; slug: string }[]> {
+  try {
+    const categorias = await obtenerCategorias();
+    if (categorias.length > 0) {
+      return [...categorias]
+        .sort((a, b) => a.order - b.order)
+        .map((c) => ({ nombre: c.name, slug: c.slug }));
+    }
+  } catch {
+    // fallback abajo
+  }
+  return NOMBRES_CATEGORIAS.map((nombre) => ({
+    nombre,
+    slug: slugCategoria(nombre),
+  }));
 }
 
-export function PiePagina() {
+export async function PiePagina() {
+  const secciones = await listarSecciones();
+
   const legales = [
     SITIO.editorResponsable && `Editor responsable: ${SITIO.editorResponsable}`,
     SITIO.domicilio && `Domicilio legal: ${SITIO.domicilio}`,
@@ -46,7 +40,7 @@ export function PiePagina() {
       <div className="regla-marca" />
 
       <div className="contenedor py-14">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+        <div className="grid gap-10 md:grid-cols-[1.5fr_1fr]">
           {/* Identidad y contacto */}
           <div>
             <div className="flex items-center gap-3">
@@ -80,22 +74,19 @@ export function PiePagina() {
             <h3 className="text-[11px] font-bold uppercase tracking-[0.22em] text-azul">
               Secciones
             </h3>
-            <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5">
-              {SECCIONES_NAV.map((seccion) => (
-                <li key={seccion}>
+            <ul className="mt-4 grid grid-cols-2 gap-x-8 gap-y-2.5 sm:grid-cols-3">
+              {secciones.map((seccion) => (
+                <li key={seccion.slug}>
                   <Link
-                    href={`/seccion/${slugCategoria(seccion)}`}
+                    href={`/seccion/${seccion.slug}`}
                     className="text-[13px] text-gris-oscuro transition-colors hover:text-azul-medio"
                   >
-                    {seccion}
+                    {seccion.nombre}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
-
-          <Columna titulo="El medio" enlaces={ENLACES_MEDIO} />
-          <Columna titulo="Servicios" enlaces={ENLACES_SERVICIOS} />
         </div>
 
         {/* Franja legal */}

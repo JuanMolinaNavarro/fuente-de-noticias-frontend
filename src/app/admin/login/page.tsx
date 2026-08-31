@@ -6,9 +6,9 @@ export const dynamic = "force-dynamic";
 export default async function Login({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; clave?: string }>;
 }) {
-  const { error, next } = await searchParams;
+  const { error, next, clave } = await searchParams;
   return (
     <div className="panel-admin flex min-h-screen items-center justify-center bg-noche text-tiza">
       <div className="w-full max-w-sm border border-azul-medio/25 bg-white/[0.02] p-8">
@@ -23,6 +23,12 @@ export default async function Login({
             </h1>
           </div>
         </div>
+        {clave === "actualizada" && (
+          <p className="mt-6 border border-azul-medio/40 bg-azul-medio/10 px-3 py-2 text-xs text-tiza/90">
+            Contraseña actualizada. Por seguridad se cerraron todas tus
+            sesiones: entrá de nuevo con la contraseña nueva.
+          </p>
+        )}
         <form action={loginAction} className="mt-8 space-y-4">
           {next && <input type="hidden" name="next" value={next} />}
           <label className="block text-xs font-semibold uppercase tracking-widest text-tiza/60">

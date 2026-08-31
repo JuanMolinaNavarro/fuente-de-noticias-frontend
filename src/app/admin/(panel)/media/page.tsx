@@ -1,11 +1,11 @@
-import { requireSession } from "@/lib/auth";
+import { esEditor, requireSession } from "@/lib/auth";
 import { listarMedia } from "@/lib/admin-api";
 import { FormAccion } from "@/components/admin/FormAccion";
 import { Paginacion } from "@/components/admin/Bandeja";
 import { Uploader } from "@/components/admin/media/Uploader";
 import { IcoLupa } from "@/components/admin/Iconos";
 import { fechaCorta } from "@/lib/fechas";
-import { editarMediaFormAction } from "./actions";
+import { borrarMediaFormAction, editarMediaFormAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,8 @@ export default async function Medios({
 }: {
   searchParams: Promise<{ q?: string; page?: string }>;
 }) {
-  const { token } = await requireSession();
+  const { token, user } = await requireSession();
+  const puedeBorrar = esEditor(user.role);
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const { medios, total, totalPages } = await listarMedia(token, { q: sp.q, page });
@@ -38,7 +39,7 @@ export default async function Medios({
       <div className="regla-marca mt-3 w-20" />
       <p className="mt-1 text-sm text-gris">
         Fotos propias o con licencia, con alt y epígrafe. Las imágenes de los feeds no se publican nunca.
-        Una foto no se borra (puede estar en notas publicadas); sí se editan sus datos.
+        Un editor puede borrar una foto sólo si no es la destacada de ninguna nota.
       </p>
 
       <section className="mt-6">
@@ -73,6 +74,11 @@ export default async function Medios({
                   <label className={label}>Alt<input name="alt" defaultValue={m.alt ?? ""} className={input} /></label>
                   <label className={label}>Epígrafe<input name="caption" defaultValue={m.caption ?? ""} className={input} /></label>
                 </FormAccion>
+                {puedeBorrar && (
+                  <FormAccion action={borrarMediaFormAction} textoBoton="Borrar" variante="secundario" compacto className="mt-2">
+                    <input type="hidden" name="id" value={m.id} />
+                  </FormAccion>
+                )}
               </div>
             </li>
           ))}
