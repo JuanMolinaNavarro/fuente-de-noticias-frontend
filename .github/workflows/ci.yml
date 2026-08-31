@@ -1,0 +1,29 @@
+# CI del frontend: el build es la puerta de calidad (incluye typecheck de
+# TypeScript y el prerender de las páginas estáticas). No corre `npm run
+# lint` todavía: hay 4 errores react-hooks preexistentes del panel admin
+# documentados como deuda — cuando se corrijan, agregar el paso.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Sin API_URL/SITE_URL a propósito: el build no depende del backend
+      # por diseño (src/lib/env.ts tolera el fallback durante next build).
+      - run: npm run build
